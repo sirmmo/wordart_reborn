@@ -7,7 +7,7 @@ One self-contained `index.html`. No build step. No dignity. Double-click and vib
 
 ## 🔴 Live
 
-**https://sirmmo.github.io/wordart_reborn/**
+**http://ingmmo.com/wordart_reborn/** (also at https://sirmmo.github.io/wordart_reborn/)
 
 ## What it does
 
