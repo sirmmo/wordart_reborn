@@ -8,7 +8,7 @@
 /* ============================================================
    WORDART REBORN — a highly customizable, highly trash,
    highly millennial browser-based WordArt editor.
-   100% self-contained. No build step. No dignity.
+   Now with MULTIPLE draggable text blocks. No dignity.
    ============================================================ */
 
 :root{
@@ -73,25 +73,26 @@ main{display:grid;grid-template-columns:1fr 372px;gap:14px;padding:14px;flex:1;m
 @media (max-width:900px){main{grid-template-columns:1fr}}
 
 /* ---------- stage ---------- */
-.stage-wrap{
-  display:flex;flex-direction:column;gap:10px;min-width:0;
-}
+.stage-wrap{display:flex;flex-direction:column;gap:10px;min-width:0}
 .stage{
-  position:relative;flex:1;min-height:340px;border-radius:14px;overflow:hidden;
-  border:4px ridge #cdd6f5;
-  display:flex;align-items:center;justify-content:center;
+  position:relative;width:100%;aspect-ratio:12/7;border-radius:14px;overflow:hidden;
+  border:4px ridge #cdd6f5; touch-action:none;
   box-shadow:0 8px 30px rgba(0,0,0,.5),0 1px 0 #fff inset;
 }
+.art-holder{position:absolute;inset:0;touch-action:none}
 .art-svg{width:100%;height:100%;display:block}
-.art-holder{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 
-/* trash animations applied to the art holder */
-.a-wobble{animation:wobble 1.2s ease-in-out infinite}
-.a-blink{animation:blink 1.1s steps(2,start) infinite}
-.a-pulse{animation:pulse 1.4s ease-in-out infinite}
-.a-rainbow .art-svg{animation:hueSpin 3s linear infinite}
-.a-marquee{animation:none}
-.a-marquee .art-svg{animation:slide 6s linear infinite}
+/* per-block interaction + selection */
+.wa-block{cursor:grab}
+.wa-block.dragging{cursor:grabbing}
+.wa-anim{transform-box:fill-box;transform-origin:center}
+.wa-rainbow{animation:hueSpin 3s linear infinite}
+.wa-wobble{animation:wobble 1.2s ease-in-out infinite}
+.wa-blink{animation:blink 1.1s steps(2,start) infinite}
+.wa-pulse{animation:pulse 1.4s ease-in-out infinite}
+.wa-slide{animation:slide 4s ease-in-out infinite}
+.sel-outline{fill:none;stroke:#00e5ff;stroke-width:2;stroke-dasharray:9 6;vector-effect:non-scaling-stroke;pointer-events:none;animation:march 1s linear infinite}
+.sel-handle{fill:#00e5ff;stroke:#062;stroke-width:1;vector-effect:non-scaling-stroke;pointer-events:none}
 
 .sparkles{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .sparkles b{position:absolute;font-size:20px;animation:twinkle 1.8s ease-in-out infinite;filter:drop-shadow(0 0 4px #fff)}
@@ -111,6 +112,7 @@ main{display:grid;grid-template-columns:1fr 372px;gap:14px;padding:14px;flex:1;m
 .tabbody{padding:12px;overflow:auto;flex:1}
 .tabpage{display:none}
 .tabpage.active{display:block}
+.selnote{font-size:11px;color:#7a005f;background:#ffe6f8;border:1px solid #ffb6ec;border-radius:8px;padding:5px 8px;margin-bottom:10px;font-weight:bold}
 
 .row{display:flex;align-items:center;gap:8px;margin:9px 0}
 .row label{font-size:12px;min-width:96px;font-weight:bold;color:#33306b}
@@ -138,6 +140,15 @@ input[type=checkbox]{width:18px;height:18px;accent-color:var(--hot)}
 .preset .nm{position:absolute;bottom:0;left:0;right:0;font-size:9px;background:rgba(0,0,0,.55);color:#fff;padding:2px 4px;text-align:center}
 .preset svg{width:100%;height:100%}
 
+/* blocks list */
+.blocklist{display:flex;flex-direction:column;gap:6px;margin:8px 0}
+.blockrow{display:flex;align-items:center;gap:5px;background:#fff;border:1px solid #cdd4f0;border-radius:8px;padding:5px 6px}
+.blockrow.on{outline:2px solid var(--hot);background:#fff5fc}
+.blockrow .bn{width:20px;height:20px;flex:none;border-radius:5px;background:#241a4a;color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center}
+.blockrow .txt{flex:1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;font-weight:bold}
+.blockrow button{padding:3px 6px;font-size:11px;border-radius:6px}
+.iconbtn{min-width:26px}
+
 .section-title{font-family:Impact,sans-serif;font-size:15px;letter-spacing:.5px;color:var(--hot2);margin:2px 0 6px;text-transform:uppercase}
 .toggle-row{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #cdd4f0;border-radius:8px;padding:7px 9px;margin:6px 0;font-size:12px;font-weight:bold}
 
@@ -152,8 +163,9 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
 @keyframes blink{50%{opacity:.15}}
 @keyframes wobble{0%,100%{transform:rotate(-4deg) scale(1)}50%{transform:rotate(4deg) scale(1.05)}}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+@keyframes slide{0%,100%{transform:translateX(-14px)}50%{transform:translateX(14px)}}
 @keyframes marquee{to{transform:translateX(-100%)}}
-@keyframes slide{0%,100%{transform:translateX(-6%)}50%{transform:translateX(6%)}}
+@keyframes march{to{stroke-dashoffset:-30}}
 @keyframes twinkle{0%,100%{transform:scale(.4);opacity:.2}50%{transform:scale(1.3);opacity:1}}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.001s !important}}
 </style>
@@ -163,7 +175,7 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
   <header>
     <div class="logo">WordArt&nbsp;Reborn</div>
     <div>
-      <div class="tagline">Now with 100% more 2003™</div>
+      <div class="tagline">Now with 100% more 2003™ · multi-text edition</div>
       <div class="blinky">● NEW! ● HOT! ● 56k friendly ●</div>
     </div>
     <div class="spacer"></div>
@@ -178,11 +190,12 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
         <div class="sparkles" id="sparkles"></div>
       </div>
       <div class="stage-tools">
-        <button class="hot" id="surprise">🎲 SURPRISE ME</button>
-        <button class="go" id="btnPng">💾 Download PNG</button>
-        <button id="btnSvg">📋 Copy SVG</button>
+        <button class="hot" id="btnAdd">➕ Add Text</button>
+        <button id="surprise">🎲 Surprise</button>
+        <button class="go" id="btnPng">💾 PNG</button>
+        <button id="btnSvg">📋 SVG</button>
         <button id="btnReset">↺ Reset</button>
-        <span class="pill" id="dims">1000 × 560</span>
+        <span class="pill">Drag blocks to move · 1200 × 700</span>
       </div>
     </section>
 
@@ -190,26 +203,40 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
     <section class="panel">
       <div class="tabs" id="tabs">
         <div class="tab active" data-t="presets">🎨 Presets</div>
+        <div class="tab" data-t="blocks">🧱 Blocks</div>
         <div class="tab" data-t="text">✏️ Text</div>
         <div class="tab" data-t="fill">🌈 Fill</div>
         <div class="tab" data-t="line">🖊️ Outline</div>
-        <div class="tab" data-t="depth">👥 3D/Shadow</div>
+        <div class="tab" data-t="depth">👥 3D</div>
         <div class="tab" data-t="warp">🌀 Warp</div>
         <div class="tab" data-t="trash">✨ Trash</div>
-        <div class="tab" data-t="bg">🖼️ BG</div>
+        <div class="tab" data-t="bg">🖼️ Scene</div>
       </div>
       <div class="tabbody">
 
         <!-- PRESETS -->
         <div class="tabpage active" data-p="presets">
           <div class="section-title">One-Click Regret</div>
-          <div class="hint">Tap a masterpiece. Then ruin it your way.</div>
+          <div class="selnote" id="selnote0">Applies the style to the <b>selected</b> block.</div>
           <div class="presetgrid" id="presetGrid"></div>
+        </div>
+
+        <!-- BLOCKS -->
+        <div class="tabpage" data-p="blocks">
+          <div class="section-title">Text Blocks</div>
+          <div class="grid2">
+            <button class="hot" id="addBlock2">➕ Add block</button>
+            <button id="dupBlock">⧉ Duplicate</button>
+          </div>
+          <div class="blocklist" id="blockList"></div>
+          <div class="row"><label>Scale</label><input type="range" id="scale" min="20" max="260" step="1"><span class="val" id="scaleV"></span></div>
+          <div class="hint">Tap a name to select · ▲▼ reorder (front/back) · ⧉ dupe · ✕ delete. Drag a block on the canvas to reposition.</div>
         </div>
 
         <!-- TEXT -->
         <div class="tabpage" data-p="text">
           <div class="section-title">Words</div>
+          <div class="selnote" id="selnote1"></div>
           <div class="row"><label>Your text</label><input type="text" id="text" maxlength="60"></div>
           <div class="row"><label>Font</label>
             <select id="font">
@@ -229,7 +256,7 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
               </optgroup>
             </select>
           </div>
-          <div class="row"><label>Size</label><input type="range" id="size" min="40" max="300" step="1"><span class="val" id="sizeV"></span></div>
+          <div class="row"><label>Size</label><input type="range" id="size" min="30" max="240" step="1"><span class="val" id="sizeV"></span></div>
           <div class="row"><label>Letter gap</label><input type="range" id="letter" min="-20" max="60" step="1"><span class="val" id="letterV"></span></div>
           <div class="grid2">
             <button id="bold">𝗕 Bold: off</button>
@@ -288,30 +315,31 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
         <div class="tabpage" data-p="warp">
           <div class="section-title">Shape It, Baby</div>
           <div class="grid3" id="warpGrid"></div>
-          <div class="row"><label>Curve</label><input type="range" id="curve" min="-260" max="260" step="1"><span class="val" id="curveV"></span></div>
-          <div class="row"><label>Rotate</label><input type="range" id="rotate" min="-45" max="45" step="1"><span class="val" id="rotateV"></span></div>
+          <div class="row"><label>Curve</label><input type="range" id="curve" min="-220" max="220" step="1"><span class="val" id="curveV"></span></div>
+          <div class="row"><label>Rotate</label><input type="range" id="rotate" min="-180" max="180" step="1"><span class="val" id="rotateV"></span></div>
           <div class="row"><label>Skew</label><input type="range" id="skew" min="-40" max="40" step="1"><span class="val" id="skewV"></span></div>
         </div>
 
         <!-- TRASH -->
         <div class="tabpage" data-p="trash">
           <div class="section-title">Maximum Millennial</div>
-          <div class="hint">The stuff HR warned you about. Live preview only — PNG exports a clean frame.</div>
+          <div class="hint">Per-block animations (live preview only — PNG exports a clean frame).</div>
           <div class="toggle-row">🌈 Rainbow cycle <input type="checkbox" id="rainbowAnim"></div>
           <div class="toggle-row">🤪 Wobble <input type="checkbox" id="wobble"></div>
           <div class="toggle-row">😵 Blink <input type="checkbox" id="blink"></div>
           <div class="toggle-row">💓 Pulse <input type="checkbox" id="pulse"></div>
           <div class="toggle-row">↔️ Slide-o-matic <input type="checkbox" id="marquee"></div>
-          <div class="toggle-row">✨ Sparkles <input type="checkbox" id="sparkleTgl"></div>
-          <div class="row"><label>Sparkle #</label><input type="range" id="sparkleN" min="0" max="80" step="1"><span class="val" id="sparkleNV"></span></div>
         </div>
 
-        <!-- BACKGROUND -->
+        <!-- SCENE / BACKGROUND -->
         <div class="tabpage" data-p="bg">
-          <div class="section-title">Backdrop</div>
+          <div class="section-title">Backdrop <span style="font-size:10px;color:#888">(whole scene)</span></div>
           <div class="grid3" id="bgGrid"></div>
           <div class="row"><label>Color A</label><input type="color" id="bgColor"></div>
           <div class="row"><label>Color B</label><input type="color" id="bgColor2"></div>
+          <div class="section-title" style="margin-top:14px">Sparkles</div>
+          <div class="toggle-row">✨ Enable sparkles <input type="checkbox" id="sparkleTgl"></div>
+          <div class="row"><label>Sparkle #</label><input type="range" id="sparkleN" min="0" max="80" step="1"><span class="val" id="sparkleNV"></span></div>
         </div>
 
       </div>
@@ -330,6 +358,8 @@ footer .counter{font-family:"Courier New",monospace;background:#000;color:#0f0;p
    DATA
    ============================================================ */
 const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+const uid = () => 'b'+Math.random().toString(36).slice(2,8);
 
 const GRADIENTS = {
   rainbow:   ['#ff0000','#ff8a00','#ffee00','#12d800','#0091ff','#7a00ff'],
@@ -359,138 +389,176 @@ const BGS = [
   ['dots','Halftone'],['sunburst','Sunburst'],['plasma','Plasma'],
 ];
 
-/* full/partial state presets */
+/* single-text style presets (applied to the selected block) */
 const PRESETS = {
-  'Rainbow Nightmare':{text:'AWESOME',font:'Impact',size:170,warp:'archUp',curve:150,fillMode:'gradient',gradient:'rainbow',gangle:90,outline:true,outlineColor:'#000000',outlineWidth:7,shadow:true,shadowX:8,shadowY:8,shadowBlur:3,bevel:false,extrude:0,bg:'grid',bgColor:'#1a0033',bgColor2:'#003a5c',sparkles:true,sparkleN:26},
-  'Chrome Dreams':{text:'MOTORS',font:'Arial Black',size:160,warp:'straight',curve:0,fillMode:'gradient',gradient:'chrome',gangle:90,outline:true,outlineColor:'#0a0a1a',outlineWidth:5,bevel:true,shadow:true,shadowX:6,shadowY:10,shadowBlur:5,extrude:6,extrudeColor:'#2b2f3d',bg:'gradient',bgColor:'#0b0b18',bgColor2:'#3a4a66',sparkles:true,sparkleN:14},
-  'Y2K Bling':{text:'BLING$',font:'Impact',size:170,warp:'bridge',curve:120,fillMode:'gradient',gradient:'gold',gangle:90,outline:true,outlineColor:'#4a2b00',outlineWidth:6,bevel:true,shadow:true,shadowX:5,shadowY:7,shadowBlur:2,bg:'stars',sparkles:true,sparkleN:44},
-  'MySpace Angel':{text:'xX_angel_Xx',font:'Brush Script MT',size:150,warp:'wave',curve:70,fillMode:'gradient',gradient:'bubblegum',gangle:90,outline:true,outlineColor:'#7a005f',outlineWidth:4,shadow:true,shadowX:4,shadowY:4,shadowBlur:6,bg:'solid',bgColor:'#0a0010',sparkles:true,sparkleN:60,rainbowAnim:false,blink:false},
-  'Vaporwave':{text:'ＡＥＳＴＨＥＴＩＣ',font:'Times New Roman',size:110,warp:'straight',curve:0,fillMode:'gradient',gradient:'vaporwave',gangle:120,outline:false,shadow:true,shadowColor:'#00e5ff',shadowX:-6,shadowY:6,shadowBlur:2,bg:'grid',bgColor:'#2a0a4a',bgColor2:'#0a2a4a',sparkles:false,sparkleN:0},
-  'Toxic Waste':{text:'DANGER',font:'Arial Black',size:165,warp:'chevDown',curve:90,fillMode:'gradient',gradient:'toxic',gangle:90,outline:true,outlineColor:'#0a1f00',outlineWidth:8,bevel:false,shadow:true,shadowX:0,shadowY:0,shadowBlur:12,shadowColor:'#7bff00',bg:'stripes',bgColor:'#111100',bgColor2:'#000',sparkles:true,sparkleN:10},
-  'Comic Catastrophe':{text:'FUN TIME!!',font:'Comic Sans MS',size:150,warp:'archUp',curve:110,fillMode:'gradient',gradient:'candy',gangle:70,outline:true,outlineColor:'#3a005a',outlineWidth:6,shadow:true,shadowX:6,shadowY:6,shadowBlur:0,bg:'sunburst',bgColor:'#ffd94b',bgColor2:'#ff5fd6',sparkles:true,sparkleN:30,wobble:false},
-  'Frozen Fire':{text:'FROZEN',font:'Impact',size:170,warp:'archDown',curve:-120,fillMode:'gradient',gradient:'ice',gangle:90,outline:true,outlineColor:'#003a66',outlineWidth:6,bevel:true,shadow:true,shadowX:0,shadowY:8,shadowBlur:8,shadowColor:'#0077b6',bg:'gradient',bgColor:'#001a33',bgColor2:'#003a66',sparkles:true,sparkleN:20},
-  'Fireball':{text:'HOT SALE',font:'Impact',size:170,warp:'wave',curve:80,fillMode:'gradient',gradient:'fire',gangle:90,outline:true,outlineColor:'#2a0000',outlineWidth:6,extrude:5,extrudeColor:'#5a1500',shadow:true,shadowX:0,shadowY:0,shadowBlur:14,shadowColor:'#ff5a00',bg:'sunburst',bgColor:'#3a0000',bgColor2:'#ff8a00',sparkles:true,sparkleN:18},
-  'Matrix Hax0r':{text:'H4CK3R',font:'Courier New',size:150,warp:'straight',curve:0,fillMode:'gradient',gradient:'matrix',gangle:90,outline:false,shadow:true,shadowX:0,shadowY:0,shadowBlur:10,shadowColor:'#12ff5a',bg:'solid',bgColor:'#000',sparkles:false,sparkleN:0,rainbowAnim:false},
-  'Golden Circle':{text:'PREMIUM · MEMBER · ',font:'Georgia',size:80,warp:'circle',curve:160,fillMode:'gradient',gradient:'gold',gangle:90,outline:true,outlineColor:'#4a2b00',outlineWidth:4,bevel:true,shadow:false,bg:'stars',sparkles:true,sparkleN:30},
-  'Ocean Deep':{text:'SPLASH',font:'Verdana',size:170,warp:'dwave',curve:70,fillMode:'gradient',gradient:'ocean',gangle:110,outline:true,outlineColor:'#001a3a',outlineWidth:6,bevel:true,shadow:true,shadowX:4,shadowY:6,shadowBlur:4,bg:'plasma',bgColor:'#001a3a',bgColor2:'#00e5ff',sparkles:true,sparkleN:16},
+  'Rainbow Nightmare':{text:'AWESOME',font:'Impact',size:150,warp:'archUp',curve:120,fillMode:'gradient',gradient:'rainbow',gangle:90,outline:true,outlineColor:'#000000',outlineWidth:7,shadow:true,shadowX:8,shadowY:8,shadowBlur:3,bevel:false,extrude:0,bg:'grid',bgColor:'#1a0033',bgColor2:'#003a5c',sparkles:true,sparkleN:24},
+  'Chrome Dreams':{text:'MOTORS',font:'Arial Black',size:150,warp:'straight',curve:0,fillMode:'gradient',gradient:'chrome',gangle:90,outline:true,outlineColor:'#0a0a1a',outlineWidth:5,bevel:true,shadow:true,shadowX:6,shadowY:10,shadowBlur:5,extrude:6,extrudeColor:'#2b2f3d',bg:'gradient',bgColor:'#0b0b18',bgColor2:'#3a4a66',sparkles:true,sparkleN:12},
+  'Y2K Bling':{text:'BLING$',font:'Impact',size:150,warp:'bridge',curve:110,fillMode:'gradient',gradient:'gold',gangle:90,outline:true,outlineColor:'#4a2b00',outlineWidth:6,bevel:true,shadow:true,shadowX:5,shadowY:7,shadowBlur:2,bg:'stars',sparkles:true,sparkleN:40},
+  'MySpace Angel':{text:'xX_angel_Xx',font:'Brush Script MT',size:120,warp:'wave',curve:60,fillMode:'gradient',gradient:'bubblegum',gangle:90,outline:true,outlineColor:'#7a005f',outlineWidth:4,shadow:true,shadowX:4,shadowY:4,shadowBlur:6,bg:'solid',bgColor:'#0a0010',sparkles:true,sparkleN:60},
+  'Vaporwave':{text:'ＡＥＳＴＨＥＴＩＣ',font:'Times New Roman',size:96,warp:'straight',curve:0,fillMode:'gradient',gradient:'vaporwave',gangle:120,outline:false,shadow:true,shadowColor:'#00e5ff',shadowX:-6,shadowY:6,shadowBlur:2,bg:'grid',bgColor:'#2a0a4a',bgColor2:'#0a2a4a',sparkles:false,sparkleN:0},
+  'Toxic Waste':{text:'DANGER',font:'Arial Black',size:150,warp:'chevDown',curve:80,fillMode:'gradient',gradient:'toxic',gangle:90,outline:true,outlineColor:'#0a1f00',outlineWidth:8,bevel:false,shadow:true,shadowX:0,shadowY:0,shadowBlur:12,shadowColor:'#7bff00',bg:'stripes',bgColor:'#111100',bgColor2:'#000',sparkles:true,sparkleN:10},
+  'Comic Catastrophe':{text:'FUN TIME!!',font:'Comic Sans MS',size:130,warp:'archUp',curve:100,fillMode:'gradient',gradient:'candy',gangle:70,outline:true,outlineColor:'#3a005a',outlineWidth:6,shadow:true,shadowX:6,shadowY:6,shadowBlur:0,bg:'sunburst',bgColor:'#ffd94b',bgColor2:'#ff5fd6',sparkles:true,sparkleN:30},
+  'Frozen Fire':{text:'FROZEN',font:'Impact',size:150,warp:'archDown',curve:-110,fillMode:'gradient',gradient:'ice',gangle:90,outline:true,outlineColor:'#003a66',outlineWidth:6,bevel:true,shadow:true,shadowX:0,shadowY:8,shadowBlur:8,shadowColor:'#0077b6',bg:'gradient',bgColor:'#001a33',bgColor2:'#003a66',sparkles:true,sparkleN:20},
+  'Fireball':{text:'HOT SALE',font:'Impact',size:150,warp:'wave',curve:70,fillMode:'gradient',gradient:'fire',gangle:90,outline:true,outlineColor:'#2a0000',outlineWidth:6,extrude:5,extrudeColor:'#5a1500',shadow:true,shadowX:0,shadowY:0,shadowBlur:14,shadowColor:'#ff5a00',bg:'sunburst',bgColor:'#3a0000',bgColor2:'#ff8a00',sparkles:true,sparkleN:18},
+  'Matrix Hax0r':{text:'H4CK3R',font:'Courier New',size:130,warp:'straight',curve:0,fillMode:'gradient',gradient:'matrix',gangle:90,outline:false,shadow:true,shadowX:0,shadowY:0,shadowBlur:10,shadowColor:'#12ff5a',bg:'solid',bgColor:'#000',sparkles:false,sparkleN:0},
+  'Golden Circle':{text:'PREMIUM · MEMBER · ',font:'Georgia',size:64,warp:'circle',curve:150,fillMode:'gradient',gradient:'gold',gangle:90,outline:true,outlineColor:'#4a2b00',outlineWidth:4,bevel:true,shadow:false,bg:'stars',sparkles:true,sparkleN:30},
+  'Ocean Deep':{text:'SPLASH',font:'Verdana',size:150,warp:'dwave',curve:60,fillMode:'gradient',gradient:'ocean',gangle:110,outline:true,outlineColor:'#001a3a',outlineWidth:6,bevel:true,shadow:true,shadowX:4,shadowY:6,shadowBlur:4,bg:'plasma',bgColor:'#001a3a',bgColor2:'#00e5ff',sparkles:true,sparkleN:16},
 };
 
 /* ============================================================
-   STATE
+   MODEL — a scene of independently styled text blocks
    ============================================================ */
-const DEFAULT = {
-  text:'WordArt', font:'Impact', size:160, bold:false, italic:false, letter:0,
-  warp:'archUp', curve:150, rotate:0, skew:0,
+const SW=1200, SH=700;
+
+const DEFAULT_BLOCK = {
+  text:'WordArt', font:'Impact', size:140, bold:false, italic:false, letter:0,
+  warp:'archUp', curve:110, rotate:0, skew:0,
   fillMode:'gradient', solid:'#ff2fd0', gradient:'rainbow', gcustom:['#ff0000','#ffee00','#0091ff'], gangle:90,
-  outline:true, outlineColor:'#000000', outlineWidth:7, bevel:false,
+  outline:true, outlineColor:'#000000', outlineWidth:6, bevel:false,
   extrude:0, extrudeColor:'#5a2b00',
-  shadow:true, shadowColor:'#000000', shadowX:8, shadowY:8, shadowBlur:3,
-  rainbowAnim:false, wobble:false, blink:false, pulse:false, marquee:false, sparkles:true, sparkleN:26,
-  bg:'grid', bgColor:'#1a0033', bgColor2:'#003a5c',
+  shadow:true, shadowColor:'#000000', shadowX:6, shadowY:6, shadowBlur:3,
+  rainbowAnim:false, wobble:false, blink:false, pulse:false, marquee:false,
 };
-let state = load() || {...DEFAULT};
+const BLOCK_KEYS = Object.keys(DEFAULT_BLOCK);
+const SCENE_KEYS = ['bg','bgColor','bgColor2','sparkles','sparkleN'];
 
-function load(){ try{ const s=localStorage.getItem('wordart'); return s?JSON.parse(s):null; }catch(e){ return null; } }
-function save(){ try{ localStorage.setItem('wordart',JSON.stringify(state)); }catch(e){} }
+function newBlock(extra){ return {...structuredCloneSafe(DEFAULT_BLOCK), id:uid(), x:SW/2, y:SH/2, scale:1, ...extra}; }
+function structuredCloneSafe(o){ return JSON.parse(JSON.stringify(o)); }
 
-/* ============================================================
-   SVG BUILDER  (the technical heart)
-   ============================================================ */
-const W=1000, H=560, CX=W/2, CY=H/2, PAD=70;
-const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-
-function warpPath(warp,curve){
-  const b = curve;                 // bend in px
-  switch(warp){
-    case 'straight': return {d:`M ${PAD} ${CY} L ${W-PAD} ${CY}`};
-    case 'archUp':   return {d:`M ${PAD} ${CY+Math.abs(b)/2} Q ${CX} ${CY-b} ${W-PAD} ${CY+Math.abs(b)/2}`};
-    case 'archDown': return {d:`M ${PAD} ${CY-Math.abs(b)/2} Q ${CX} ${CY-b} ${W-PAD} ${CY-Math.abs(b)/2}`};
-    case 'bridge':   return {d:`M ${PAD} ${CY+Math.abs(b)/2} Q ${CX} ${CY-b*1.3} ${W-PAD} ${CY+Math.abs(b)/2}`};
-    case 'wave':     return {d:`M ${PAD} ${CY} C ${W*0.30} ${CY-b}, ${W*0.60} ${CY+b}, ${W-PAD} ${CY}`};
-    case 'dwave':    return {d:`M ${PAD} ${CY} Q ${W*0.28} ${CY-b} ${CX} ${CY} T ${W-PAD} ${CY}`};
-    case 'chevUp':   return {d:`M ${PAD} ${CY+Math.abs(b)/2} L ${CX} ${CY-b/2} L ${W-PAD} ${CY+Math.abs(b)/2}`};
-    case 'chevDown': return {d:`M ${PAD} ${CY-Math.abs(b)/2} L ${CX} ${CY+b/2} L ${W-PAD} ${CY-Math.abs(b)/2}`};
-    case 'circle':{
-      const r=Math.max(90,Math.abs(b));
-      return {d:`M ${CX} ${CY-r} A ${r} ${r} 0 1 1 ${CX-0.01} ${CY-r} Z`, off:'25%'};
-    }
-    default: return {d:`M ${PAD} ${CY} L ${W-PAD} ${CY}`};
-  }
+function freshScene(){
+  const b1=newBlock({text:'WordArt', warp:'archUp', curve:120, gradient:'rainbow', x:SW/2, y:250, size:150});
+  const b2=newBlock({text:'Reborn',  warp:'wave',   curve:60,  gradient:'gold', bevel:true, x:SW/2, y:470, size:120});
+  return { bg:'grid', bgColor:'#1a0033', bgColor2:'#003a5c', sparkles:true, sparkleN:24, blocks:[b1,b2], sel:b1.id };
 }
 
+let scene = load();
+
+function load(){
+  try{ const s=localStorage.getItem('wordart2'); if(s){ const p=JSON.parse(s); if(p&&p.blocks&&p.blocks.length) return normalize(p); } }catch(e){}
+  const migrated=migrateOld(); if(migrated) return migrated;
+  return freshScene();
+}
+function normalize(p){
+  p.blocks=p.blocks.map(b=>({...structuredCloneSafe(DEFAULT_BLOCK), id:uid(), x:SW/2, y:SH/2, scale:1, ...b}));
+  if(!p.blocks.find(b=>b.id===p.sel)) p.sel=p.blocks[0].id;
+  SCENE_KEYS.forEach(k=>{ if(p[k]===undefined) p[k]=freshScene()[k]; });
+  return p;
+}
+function migrateOld(){
+  try{
+    const o=JSON.parse(localStorage.getItem('wordart')); if(!o) return null;
+    const b={...structuredCloneSafe(DEFAULT_BLOCK)};
+    BLOCK_KEYS.forEach(k=>{ if(o[k]!==undefined) b[k]=o[k]; });
+    b.id=uid(); b.x=SW/2; b.y=SH/2; b.scale=1; b.curve=Math.max(-220,Math.min(220,b.curve));
+    return { bg:o.bg||'grid', bgColor:o.bgColor||'#1a0033', bgColor2:o.bgColor2||'#003a5c',
+             sparkles:o.sparkles!==false, sparkleN:o.sparkleN||24, blocks:[b], sel:b.id };
+  }catch(e){ return null; }
+}
+function save(){ try{ localStorage.setItem('wordart2',JSON.stringify(scene)); }catch(e){} }
+
+const sel  = () => scene.blocks.find(b=>b.id===scene.sel) || scene.blocks[0];
+const byId = id => scene.blocks.find(b=>b.id===id);
+
+/* ============================================================
+   SVG BUILDER (each block is an origin-local transform group)
+   ============================================================ */
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function warpPath(warp,b,hw){
+  switch(warp){
+    case 'straight': return {d:`M ${-hw} 0 L ${hw} 0`};
+    case 'archUp':   return {d:`M ${-hw} ${Math.abs(b)/2} Q 0 ${-b} ${hw} ${Math.abs(b)/2}`};
+    case 'archDown': return {d:`M ${-hw} ${-Math.abs(b)/2} Q 0 ${-b} ${hw} ${-Math.abs(b)/2}`};
+    case 'bridge':   return {d:`M ${-hw} ${Math.abs(b)/2} Q 0 ${-b*1.3} ${hw} ${Math.abs(b)/2}`};
+    case 'wave':     return {d:`M ${-hw} 0 C ${-hw*0.33} ${-b}, ${hw*0.33} ${b}, ${hw} 0`};
+    case 'dwave':    return {d:`M ${-hw} 0 Q ${-hw*0.5} ${-b} 0 0 T ${hw} 0`};
+    case 'chevUp':   return {d:`M ${-hw} ${Math.abs(b)/2} L 0 ${-b/2} L ${hw} ${Math.abs(b)/2}`};
+    case 'chevDown': return {d:`M ${-hw} ${-Math.abs(b)/2} L 0 ${b/2} L ${hw} ${-Math.abs(b)/2}`};
+    case 'circle':{ const r=Math.max(60,Math.abs(b)); return {d:`M 0 ${-r} A ${r} ${r} 0 1 1 -0.01 ${-r} Z`, off:'25%'}; }
+    default: return {d:`M ${-hw} 0 L ${hw} 0`};
+  }
+}
 function gradCoords(angle){
   const a=(angle-90)*Math.PI/180, x=Math.cos(a), y=Math.sin(a);
   return {x1:(0.5-x/2).toFixed(4),y1:(0.5-y/2).toFixed(4),x2:(0.5+x/2).toFixed(4),y2:(0.5+y/2).toFixed(4)};
 }
-
-function fillStops(s){
-  return s.fillMode==='solid' ? null
-    : (s.gradient==='custom' ? s.gcustom : GRADIENTS[s.gradient] || GRADIENTS.rainbow);
+function fillStops(b){
+  return b.fillMode==='solid' ? null : (b.gradient==='custom' ? b.gcustom : GRADIENTS[b.gradient] || GRADIENTS.rainbow);
 }
 
-function buildSVG(s, forExport){
-  const {d,off} = warpPath(s.warp, s.curve);
-  const startOff = off || '50%';
-  const stops = fillStops(s);
-  const uid = 'wa';
+function buildBlock(b, opts){
+  opts=opts||{};
+  const id=b.id;
+  const estW=Math.max(b.size*1.1, (b.text||' ').length * b.size * 0.55);
+  const hw=estW/2;
+  const {d,off}=warpPath(b.warp,b.curve,hw);
+  const startOff=off||'50%';
+  const stops=fillStops(b);
 
-  // ---- defs ----
-  let defs = `<path id="${uid}p" d="${d}" fill="none"/>`;
+  let defs=`<path id="p_${id}" d="${d}" fill="none"/>`;
   let fillRef;
   if(stops){
-    const gc=gradCoords(s.gangle);
+    const gc=gradCoords(b.gangle);
     const st=stops.map((c,i)=>`<stop offset="${(i/(stops.length-1)*100).toFixed(1)}%" stop-color="${c}"/>`).join('');
-    defs += `<linearGradient id="${uid}g" x1="${gc.x1}" y1="${gc.y1}" x2="${gc.x2}" y2="${gc.y2}">${st}</linearGradient>`;
-    fillRef=`url(#${uid}g)`;
-  } else { fillRef=s.solid; }
+    defs+=`<linearGradient id="g_${id}" x1="${gc.x1}" y1="${gc.y1}" x2="${gc.x2}" y2="${gc.y2}">${st}</linearGradient>`;
+    fillRef=`url(#g_${id})`;
+  } else fillRef=b.solid;
 
-  // ---- filter (bevel then shadow) ----
   let filterAttr='';
-  if(s.bevel || s.shadow){
+  if(b.bevel || b.shadow){
     let prims='', src='SourceGraphic';
-    if(s.bevel){
-      prims += `<feGaussianBlur in="SourceAlpha" stdDeviation="4" result="b"/>`
-            +  `<feSpecularLighting in="b" surfaceScale="6" specularConstant="0.9" specularExponent="18" lighting-color="#ffffff" result="sp"><fePointLight x="-600" y="-900" z="500"/></feSpecularLighting>`
+    if(b.bevel){
+      prims += `<feGaussianBlur in="SourceAlpha" stdDeviation="4" result="bl"/>`
+            +  `<feSpecularLighting in="bl" surfaceScale="6" specularConstant="0.9" specularExponent="18" lighting-color="#ffffff" result="sp"><fePointLight x="-600" y="-900" z="500"/></feSpecularLighting>`
             +  `<feComposite in="sp" in2="SourceAlpha" operator="in" result="spo"/>`
             +  `<feComposite in="SourceGraphic" in2="spo" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" result="lit"/>`;
       src='lit';
     }
-    if(s.shadow){
-      prims += `<feDropShadow in="${src}" dx="${s.shadowX}" dy="${s.shadowY}" stdDeviation="${s.shadowBlur}" flood-color="${s.shadowColor}" flood-opacity="0.85"/>`;
+    if(b.shadow){
+      prims += `<feDropShadow in="${src}" dx="${b.shadowX}" dy="${b.shadowY}" stdDeviation="${b.shadowBlur}" flood-color="${b.shadowColor}" flood-opacity="0.85"/>`;
     }
-    defs += `<filter id="${uid}f" x="-40%" y="-60%" width="180%" height="220%">${prims}</filter>`;
-    filterAttr=` filter="url(#${uid}f)"`;
+    defs+=`<filter id="f_${id}" x="-40%" y="-60%" width="180%" height="220%">${prims}</filter>`;
+    filterAttr=` filter="url(#f_${id})"`;
   }
 
-  // ---- text attrs ----
-  const weight = s.bold?'900':'normal';
-  const style  = s.italic?'italic':'normal';
-  const stroke = s.outline && s.outlineWidth>0
-      ? ` stroke="${s.outlineColor}" stroke-width="${s.outlineWidth}" stroke-linejoin="round" paint-order="stroke"` : '';
-  const common = `font-family="${esc(s.font)}, Impact, sans-serif" font-size="${s.size}" font-weight="${weight}" font-style="${style}" letter-spacing="${s.letter}" text-anchor="middle"`;
-  const inner  = `<textPath href="#${uid}p" xlink:href="#${uid}p" startOffset="${startOff}">${esc(s.text||' ')}</textPath>`;
+  const weight=b.bold?'900':'normal', style=b.italic?'italic':'normal';
+  const stroke=(b.outline && b.outlineWidth>0)
+      ? ` stroke="${b.outlineColor}" stroke-width="${b.outlineWidth}" stroke-linejoin="round" paint-order="stroke"` : '';
+  const common=`font-family="${esc(b.font)}, Impact, sans-serif" font-size="${b.size}" font-weight="${weight}" font-style="${style}" letter-spacing="${b.letter}" text-anchor="middle"`;
+  const inner=`<textPath href="#p_${id}" xlink:href="#p_${id}" startOffset="${startOff}">${esc(b.text||' ')}</textPath>`;
 
-  // ---- 3D extrude copies (behind) ----
   let extrude='';
-  if(s.extrude>0){
-    for(let i=s.extrude;i>=1;i--){
-      extrude += `<text ${common} fill="${s.extrudeColor}" transform="translate(${i*1.6},${i*1.6})">${inner}</text>`;
-    }
-  }
+  if(b.extrude>0){ for(let i=b.extrude;i>=1;i--) extrude+=`<text ${common} fill="${b.extrudeColor}" transform="translate(${i*1.6},${i*1.6})">${inner}</text>`; }
 
-  const mainText = `<text ${common} fill="${fillRef}"${stroke}${filterAttr}>${inner}</text>`;
-  const gtrans = `rotate(${s.rotate} ${CX} ${CY}) skewX(${s.skew})`;
+  const mainText=`<text ${common} fill="${fillRef}"${stroke}${filterAttr}>${inner}</text>`;
 
-  const sizeAttr = forExport ? `width="${W*2}" height="${H*2}"` : `width="100%" height="100%" preserveAspectRatio="xMidYMid meet"`;
+  const animCls = opts.forExport ? '' :
+    ['wa-anim', b.rainbowAnim&&'wa-rainbow', b.wobble&&'wa-wobble', b.blink&&'wa-blink', b.pulse&&'wa-pulse', b.marquee&&'wa-slide'].filter(Boolean).join(' ');
+  const animOpen = opts.forExport ? '<g>' : `<g class="${animCls}">`;
+  const transform=`translate(${b.x} ${b.y}) rotate(${b.rotate}) skewX(${b.skew}) scale(${b.scale})`;
+  const node=`<g class="wa-block" data-id="${id}" transform="${transform}">${animOpen}${extrude}${mainText}</g></g>`;
+  return {defs, node};
+}
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${W} ${H}" ${sizeAttr} class="art-svg">`
-       + `<defs>${defs}</defs>`
-       + `<g transform="${gtrans}">${extrude}${mainText}</g>`
-       + `</svg>`;
+function buildSceneSVG(forExport){
+  let defs='', body='';
+  scene.blocks.forEach(b=>{ const r=buildBlock(b,{forExport}); defs+=r.defs; body+=r.node; });
+  const size = forExport ? `width="${SW*2}" height="${SH*2}"` : `width="100%" height="100%" preserveAspectRatio="xMidYMid meet"`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${SW} ${SH}" ${size} class="art-svg">`
+       + `<defs>${defs}</defs>${body}</svg>`;
+}
+
+/* one-block standalone SVG for preset thumbnails */
+function buildPreviewSVG(p){
+  const b={...structuredCloneSafe(DEFAULT_BLOCK)};
+  BLOCK_KEYS.forEach(k=>{ if(p[k]!==undefined) b[k]=p[k]; });
+  b.id='pv_'+Math.random().toString(36).slice(2,7); b.x=SW/2; b.y=SH/2; b.scale=1;
+  const r=buildBlock(b,{forExport:true});
+  return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 ${SW} ${SH}" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"><defs>${r.defs}</defs>${r.node}</svg>`;
 }
 
 /* ============================================================
-   BACKGROUND (CSS on the stage) — also used for PNG export
+   BACKGROUND (scene-level)
    ============================================================ */
 function bgCss(s){
   const a=s.bgColor, b=s.bgColor2;
@@ -514,101 +582,153 @@ function bgCss(s){
    RENDER
    ============================================================ */
 function render(){
-  const holder=$('artHolder');
-  holder.innerHTML=buildSVG(state,false);
-
-  // stage bg + trash animation classes
-  const stage=$('stage');
-  stage.style.background=bgCss(state);
-  holder.className='art-holder'
-    + (state.wobble?' a-wobble':'')
-    + (state.blink?' a-blink':'')
-    + (state.pulse?' a-pulse':'')
-    + (state.rainbowAnim?' a-rainbow':'')
-    + (state.marquee?' a-marquee':'');
-
+  $('artHolder').innerHTML=buildSceneSVG(false);
+  $('stage').style.background=bgCss(scene);
+  addSelectionOutline();
   buildSparkles();
   save();
 }
 
-let sparkleGlyphs=['✨','⭐','🌟','💫','❄️','💖','🔥','⚡'];
+function addSelectionOutline(){
+  const svg=$('artHolder').querySelector('svg'); if(!svg) return;
+  svg.querySelectorAll('.sel-outline,.sel-handle').forEach(n=>n.remove());
+  const outer=svg.querySelector(`.wa-block[data-id="${scene.sel}"]`);
+  const anim=outer && outer.querySelector('g');
+  if(!outer || !anim) return;
+  let bb; try{ bb=anim.getBBox(); }catch(e){ return; }
+  if(!bb || !isFinite(bb.width)) return;
+  const pad=14, x=bb.x-pad, y=bb.y-pad, w=bb.width+pad*2, h=bb.height+pad*2;
+  const rect=document.createElementNS(NS,'rect');
+  rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',w); rect.setAttribute('height',h);
+  rect.setAttribute('rx',6); rect.setAttribute('class','sel-outline');
+  outer.appendChild(rect);
+  [[x,y],[x+w,y],[x,y+h],[x+w,y+h]].forEach(([hx,hy])=>{
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',hx); c.setAttribute('cy',hy); c.setAttribute('r',6); c.setAttribute('class','sel-handle');
+    outer.appendChild(c);
+  });
+}
+
+const SPARKGLYPHS=['✨','⭐','🌟','💫','❄️','💖','🔥','⚡'];
 function buildSparkles(){
   const box=$('sparkles'); box.innerHTML='';
-  if(!state.sparkles) return;
-  const seed=hash(state.text+state.bg+state.sparkleN);
-  const rnd=mulberry(seed);
-  for(let i=0;i<state.sparkleN;i++){
+  if(!scene.sparkles) return;
+  const rnd=mulberry(hash((sel()?sel().text:'')+scene.bg+scene.sparkleN+scene.blocks.length));
+  for(let i=0;i<scene.sparkleN;i++){
     const b=document.createElement('b');
-    b.textContent=sparkleGlyphs[Math.floor(rnd()*sparkleGlyphs.length)];
-    b.style.left=(rnd()*96+1)+'%';
-    b.style.top=(rnd()*90+2)+'%';
+    b.textContent=SPARKGLYPHS[Math.floor(rnd()*SPARKGLYPHS.length)];
+    b.style.left=(rnd()*96+1)+'%'; b.style.top=(rnd()*90+2)+'%';
     b.style.animationDelay=(rnd()*1.8).toFixed(2)+'s';
     b.style.fontSize=(12+rnd()*18|0)+'px';
     box.appendChild(b);
   }
 }
-function hash(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function hash(s){s=String(s);let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
 function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return ((t^t>>>14)>>>0)/4294967296;};}
 
 /* ============================================================
-   CONTROL WIRING
+   DRAG TO MOVE
+   ============================================================ */
+let drag=null;
+function toScene(svg,e){
+  const pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+  const m=svg.getScreenCTM(); if(!m) return {x:0,y:0};
+  const p=pt.matrixTransform(m.inverse()); return {x:p.x,y:p.y};
+}
+function onDown(e){
+  const svg=$('artHolder').querySelector('svg'); if(!svg) return;
+  const g=e.target.closest('.wa-block'); if(!g) return;
+  const id=g.getAttribute('data-id'); const b=byId(id); if(!b) return;
+  scene.sel=id;
+  const loc=toScene(svg,e);
+  drag={id, g, dx:loc.x-b.x, dy:loc.y-b.y, moved:false, pid:e.pointerId};
+  g.classList.add('dragging');
+  try{ g.setPointerCapture(e.pointerId); }catch(_){}
+  lightweightSelect();          // update outline + panel WITHOUT rebuilding the svg
+  e.preventDefault();
+}
+function onMove(e){
+  if(!drag) return;
+  const svg=$('artHolder').querySelector('svg'); if(!svg) return;
+  const b=byId(drag.id); if(!b) return;
+  const loc=toScene(svg,e);
+  b.x=Math.round(Math.max(20,Math.min(SW-20, loc.x-drag.dx)));
+  b.y=Math.round(Math.max(20,Math.min(SH-20, loc.y-drag.dy)));
+  drag.moved=true;
+  drag.g.setAttribute('transform',`translate(${b.x} ${b.y}) rotate(${b.rotate}) skewX(${b.skew}) scale(${b.scale})`);
+}
+function onUp(){
+  if(!drag) return;
+  drag.g.classList.remove('dragging');
+  drag=null; render(); refreshBlockList();
+}
+function lightweightSelect(){
+  addSelectionOutline(); syncControls(); refreshBlockList();
+}
+
+/* ============================================================
+   CONTROLS
    ============================================================ */
 function syncControls(){
-  $('text').value=state.text; $('font').value=state.font;
-  setR('size'); setR('letter'); setR('curve'); setR('rotate'); setR('skew');
-  setR('gangle'); setR('outlineWidth'); setR('extrude');
-  setR('shadowX'); setR('shadowY'); setR('shadowBlur'); setR('sparkleN');
-  $('bold').textContent='𝗕 Bold: '+(state.bold?'on':'off');
-  $('italic').textContent='𝘐 Italic: '+(state.italic?'on':'off');
-  $('solid').value=state.solid; $('solidBox').style.display=state.fillMode==='solid'?'block':'none';
-  $('gradBox').style.display=state.fillMode==='gradient'?'block':'none';
-  $('fmGrad').classList.toggle('on',state.fillMode==='gradient');
-  $('fmSolid').classList.toggle('on',state.fillMode==='solid');
-  $('outline').checked=state.outline; $('outlineColor').value=state.outlineColor;
-  $('bevel').checked=state.bevel;
-  $('extrudeColor').value=state.extrudeColor;
-  $('shadow').checked=state.shadow; $('shadowColor').value=state.shadowColor;
-  $('gc0').value=state.gcustom[0]; $('gc1').value=state.gcustom[1]; $('gc2').value=state.gcustom[2];
-  ['rainbowAnim','wobble','blink','pulse','marquee'].forEach(k=>$(k).checked=state[k]);
-  $('sparkleTgl').checked=state.sparkles;
-  $('bgColor').value=state.bgColor; $('bgColor2').value=state.bgColor2;
-  // active chips
-  document.querySelectorAll('#warpGrid .chip').forEach(c=>c.classList.toggle('on',c.dataset.v===state.warp));
-  document.querySelectorAll('#bgGrid .chip').forEach(c=>c.classList.toggle('on',c.dataset.v===state.bg));
-  document.querySelectorAll('#gradPresets .swatch').forEach(c=>c.classList.toggle('on',c.dataset.v===state.gradient && state.fillMode==='gradient'));
+  const b=sel(); if(!b) return;
+  $('selnote1').innerHTML='Editing block: <b>“'+esc((b.text||'').slice(0,22)||' ')+'”</b>';
+  $('text').value=b.text; $('font').value=b.font;
+  ['size','letter','curve','rotate','skew','gangle','outlineWidth','extrude','shadowX','shadowY','shadowBlur'].forEach(id=>setR(id,b[id]));
+  $('scale').value=Math.round(b.scale*100); $('scaleV').textContent=Math.round(b.scale*100)+'%';
+  $('bold').textContent='𝗕 Bold: '+(b.bold?'on':'off');
+  $('italic').textContent='𝘐 Italic: '+(b.italic?'on':'off');
+  $('solid').value=b.solid; $('solidBox').style.display=b.fillMode==='solid'?'block':'none';
+  $('gradBox').style.display=b.fillMode==='gradient'?'block':'none';
+  $('fmGrad').classList.toggle('on',b.fillMode==='gradient');
+  $('fmSolid').classList.toggle('on',b.fillMode==='solid');
+  $('outline').checked=b.outline; $('outlineColor').value=b.outlineColor;
+  $('bevel').checked=b.bevel; $('extrudeColor').value=b.extrudeColor;
+  $('shadow').checked=b.shadow; $('shadowColor').value=b.shadowColor;
+  $('gc0').value=b.gcustom[0]; $('gc1').value=b.gcustom[1]; $('gc2').value=b.gcustom[2];
+  ['rainbowAnim','wobble','blink','pulse','marquee'].forEach(k=>$(k).checked=b[k]);
+  // scene-level
+  $('sparkleTgl').checked=scene.sparkles; setR('sparkleN',scene.sparkleN);
+  $('bgColor').value=scene.bgColor; $('bgColor2').value=scene.bgColor2;
+  document.querySelectorAll('#warpGrid .chip').forEach(c=>c.classList.toggle('on',c.dataset.v===b.warp));
+  document.querySelectorAll('#bgGrid .chip').forEach(c=>c.classList.toggle('on',c.dataset.v===scene.bg));
+  document.querySelectorAll('#gradPresets .swatch').forEach(c=>c.classList.toggle('on',c.dataset.v===b.gradient && b.fillMode==='gradient'));
 }
-function setR(id){ const el=$(id); if(!el) return; el.value=state[id]; const v=$(id+'V'); if(v) v.textContent=state[id]; }
+function setR(id,v){ const el=$(id); if(!el) return; el.value=v; const lab=$(id+'V'); if(lab) lab.textContent=v; }
 
-function bindRange(id,parse=parseFloat){
+function bindBlockRange(id,parse=parseFloat){
   const el=$(id); if(!el) return;
-  el.addEventListener('input',()=>{ state[id]=parse(el.value); const v=$(id+'V'); if(v)v.textContent=el.value; render(); });
+  el.addEventListener('input',()=>{ sel()[id]=parse(el.value); const v=$(id+'V'); if(v)v.textContent=el.value; render(); });
 }
-function bindColor(id,key){ $(id).addEventListener('input',()=>{state[key]=$(id).value;render();}); }
-function bindCheck(id,key){ $(id).addEventListener('change',()=>{state[key]=$(id).checked;render();}); }
+function bindBlockColor(id,key){ $(id).addEventListener('input',()=>{ sel()[key]=$(id).value; render(); }); }
+function bindBlockCheck(id,key){ $(id).addEventListener('change',()=>{ sel()[key]=$(id).checked; render(); }); }
+function bindSceneColor(id,key){ $(id).addEventListener('input',()=>{ scene[key]=$(id).value; render(); }); }
 
 function initControls(){
-  // text
-  $('text').addEventListener('input',()=>{state.text=$('text').value;render();});
-  $('font').addEventListener('change',()=>{state.font=$('font').value;render();});
-  ['size','letter','curve','rotate','skew','gangle','outlineWidth','extrude','shadowX','shadowY','shadowBlur','sparkleN'].forEach(id=>bindRange(id));
-  $('bold').addEventListener('click',()=>{state.bold=!state.bold;$('bold').textContent='𝗕 Bold: '+(state.bold?'on':'off');render();});
-  $('italic').addEventListener('click',()=>{state.italic=!state.italic;$('italic').textContent='𝘐 Italic: '+(state.italic?'on':'off');render();});
+  $('text').addEventListener('input',()=>{ sel().text=$('text').value; render(); refreshBlockList(); });
+  $('font').addEventListener('change',()=>{ sel().font=$('font').value; render(); });
+  ['size','letter','curve','rotate','skew','gangle','outlineWidth','extrude','shadowX','shadowY','shadowBlur'].forEach(id=>bindBlockRange(id));
+  $('scale').addEventListener('input',()=>{ sel().scale=(+$('scale').value)/100; $('scaleV').textContent=$('scale').value+'%'; render(); });
+  $('bold').addEventListener('click',()=>{ const b=sel(); b.bold=!b.bold; $('bold').textContent='𝗕 Bold: '+(b.bold?'on':'off'); render(); });
+  $('italic').addEventListener('click',()=>{ const b=sel(); b.italic=!b.italic; $('italic').textContent='𝘐 Italic: '+(b.italic?'on':'off'); render(); });
 
-  // fill
-  $('fmGrad').addEventListener('click',()=>{state.fillMode='gradient';syncControls();render();});
-  $('fmSolid').addEventListener('click',()=>{state.fillMode='solid';syncControls();render();});
-  bindColor('solid','solid');
-  $('useCustom').addEventListener('click',()=>{state.gcustom=[$('gc0').value,$('gc1').value,$('gc2').value];state.gradient='custom';state.fillMode='gradient';syncControls();render();});
+  $('fmGrad').addEventListener('click',()=>{ sel().fillMode='gradient'; syncControls(); render(); });
+  $('fmSolid').addEventListener('click',()=>{ sel().fillMode='solid'; syncControls(); render(); });
+  bindBlockColor('solid','solid');
+  $('useCustom').addEventListener('click',()=>{ const b=sel(); b.gcustom=[$('gc0').value,$('gc1').value,$('gc2').value]; b.gradient='custom'; b.fillMode='gradient'; syncControls(); render(); });
 
-  // outline + bevel
-  bindCheck('outline','outline'); bindColor('outlineColor','outlineColor'); bindCheck('bevel','bevel');
-  // depth
-  bindColor('extrudeColor','extrudeColor'); bindCheck('shadow','shadow'); bindColor('shadowColor','shadowColor');
-  // trash
-  ['rainbowAnim','wobble','blink','pulse','marquee'].forEach(k=>bindCheck(k,k));
-  $('sparkleTgl').addEventListener('change',()=>{state.sparkles=$('sparkleTgl').checked;render();});
-  // bg colors
-  bindColor('bgColor','bgColor'); bindColor('bgColor2','bgColor2');
+  bindBlockCheck('outline','outline'); bindBlockColor('outlineColor','outlineColor'); bindBlockCheck('bevel','bevel');
+  bindBlockColor('extrudeColor','extrudeColor'); bindBlockCheck('shadow','shadow'); bindBlockColor('shadowColor','shadowColor');
+  ['rainbowAnim','wobble','blink','pulse','marquee'].forEach(k=>bindBlockCheck(k,k));
+
+  // scene-level
+  $('sparkleTgl').addEventListener('change',()=>{ scene.sparkles=$('sparkleTgl').checked; render(); });
+  $('sparkleN').addEventListener('input',()=>{ scene.sparkleN=+$('sparkleN').value; $('sparkleNV').textContent=$('sparkleN').value; render(); });
+  bindSceneColor('bgColor','bgColor'); bindSceneColor('bgColor2','bgColor2');
+
+  // block ops
+  $('addBlock2').addEventListener('click',addBlock);
+  $('btnAdd').addEventListener('click',addBlock);
+  $('dupBlock').addEventListener('click',dupBlock);
 
   // tabs
   document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
@@ -617,44 +737,70 @@ function initControls(){
     t.classList.add('active');
     document.querySelector(`.tabpage[data-p="${t.dataset.t}"]`).classList.add('active');
   }));
+
+  // drag
+  $('artHolder').addEventListener('pointerdown',onDown);
+  window.addEventListener('pointermove',onMove);
+  window.addEventListener('pointerup',onUp);
+  window.addEventListener('pointercancel',onUp);
 }
 
-/* build dynamic grids */
+/* dynamic grids */
 function buildGrids(){
-  // warp
   const wg=$('warpGrid'); wg.innerHTML='';
-  WARPS.forEach(([v,label])=>{
-    const b=document.createElement('button'); b.className='chip'; b.dataset.v=v; b.textContent=label;
-    b.onclick=()=>{state.warp=v;syncControls();render();};
-    wg.appendChild(b);
-  });
-  // bg
+  WARPS.forEach(([v,label])=>{ const btn=document.createElement('button'); btn.className='chip'; btn.dataset.v=v; btn.textContent=label; btn.onclick=()=>{ sel().warp=v; syncControls(); render(); }; wg.appendChild(btn); });
+
   const bg=$('bgGrid'); bg.innerHTML='';
-  BGS.forEach(([v,label])=>{
-    const b=document.createElement('button'); b.className='chip'; b.dataset.v=v; b.textContent=label;
-    b.onclick=()=>{state.bg=v;syncControls();render();};
-    bg.appendChild(b);
-  });
-  // gradient presets
+  BGS.forEach(([v,label])=>{ const btn=document.createElement('button'); btn.className='chip'; btn.dataset.v=v; btn.textContent=label; btn.onclick=()=>{ scene.bg=v; syncControls(); render(); }; bg.appendChild(btn); });
+
   const gp=$('gradPresets'); gp.innerHTML='';
-  Object.keys(GRADIENTS).forEach(k=>{
-    const s=document.createElement('div'); s.className='swatch'; s.dataset.v=k; s.title=GRAD_NAMES[k];
-    s.style.background=`linear-gradient(90deg,${GRADIENTS[k].join(',')})`;
-    s.onclick=()=>{state.gradient=k;state.fillMode='gradient';syncControls();render();};
-    gp.appendChild(s);
-  });
-  // presets (mini live SVG previews)
+  Object.keys(GRADIENTS).forEach(k=>{ const s=document.createElement('div'); s.className='swatch'; s.dataset.v=k; s.title=GRAD_NAMES[k]; s.style.background=`linear-gradient(90deg,${GRADIENTS[k].join(',')})`; s.onclick=()=>{ const b=sel(); b.gradient=k; b.fillMode='gradient'; syncControls(); render(); }; gp.appendChild(s); });
+
   const pg=$('presetGrid'); pg.innerHTML='';
   Object.keys(PRESETS).forEach(name=>{
-    const merged={...DEFAULT,...PRESETS[name]};
-    const cell=document.createElement('div'); cell.className='preset';
-    cell.style.background=bgCss(merged);
-    cell.innerHTML=buildSVG(merged,false)+`<span class="nm">${esc(name)}</span>`;
-    cell.title=name;
-    cell.onclick=()=>{ state={...DEFAULT,...PRESETS[name]}; syncControls(); render(); flash('Loaded: '+name); };
+    const p=PRESETS[name];
+    const cell=document.createElement('div'); cell.className='preset'; cell.title=name;
+    cell.style.background=bgCss({bg:p.bg||'grid',bgColor:p.bgColor||'#1a0033',bgColor2:p.bgColor2||'#003a5c'});
+    cell.innerHTML=buildPreviewSVG(p)+`<span class="nm">${esc(name)}</span>`;
+    cell.onclick=()=>applyPreset(name);
     pg.appendChild(cell);
   });
 }
+
+function applyPreset(name){
+  const p=PRESETS[name]; const b=sel();
+  const keep={id:b.id, x:b.x, y:b.y, scale:b.scale};
+  const bf={...structuredCloneSafe(DEFAULT_BLOCK)};
+  BLOCK_KEYS.forEach(k=>{ if(p[k]!==undefined) bf[k]=p[k]; });
+  Object.assign(b, bf, keep);
+  SCENE_KEYS.forEach(k=>{ if(p[k]!==undefined) scene[k]=p[k]; });
+  syncControls(); render(); refreshBlockList(); flash('Loaded: '+name);
+}
+
+/* blocks list */
+function refreshBlockList(){
+  const list=$('blockList'); if(!list) return;
+  list.innerHTML='';
+  scene.blocks.forEach((b,i)=>{
+    const row=document.createElement('div'); row.className='blockrow'+(b.id===scene.sel?' on':'');
+    const num=document.createElement('div'); num.className='bn'; num.textContent=i+1;
+    const txt=document.createElement('div'); txt.className='txt'; txt.textContent=b.text||'(empty)'; txt.title='Select';
+    txt.onclick=()=>selectBlock(b.id);
+    const up=iconBtn('▲','Bring forward',()=>{ scene.sel=b.id; moveBlock(1); });
+    const dn=iconBtn('▼','Send back',()=>{ scene.sel=b.id; moveBlock(-1); });
+    const du=iconBtn('⧉','Duplicate',()=>{ scene.sel=b.id; dupBlock(); });
+    const dl=iconBtn('✕','Delete',()=>{ scene.sel=b.id; delBlock(); });
+    row.append(num,txt,up,dn,du,dl);
+    list.appendChild(row);
+  });
+}
+function iconBtn(label,title,fn){ const el=document.createElement('button'); el.className='iconbtn'; el.textContent=label; el.title=title; el.onclick=fn; return el; }
+
+function selectBlock(id){ scene.sel=id; syncControls(); render(); refreshBlockList(); }
+function addBlock(){ const b=newBlock({text:'New Text', x:SW/2+(Math.random()*160-80), y:SH/2+(Math.random()*160-80)}); scene.blocks.push(b); scene.sel=b.id; syncControls(); render(); refreshBlockList(); flash('➕ Block added'); }
+function dupBlock(){ const s=sel(); const c={...structuredCloneSafe(s), id:uid(), x:Math.min(SW-20,s.x+40), y:Math.min(SH-20,s.y+40)}; scene.blocks.push(c); scene.sel=c.id; syncControls(); render(); refreshBlockList(); flash('⧉ Duplicated'); }
+function delBlock(){ if(scene.blocks.length<=1){ flash('⚠️ Need at least one block'); return; } const i=scene.blocks.findIndex(b=>b.id===scene.sel); scene.blocks.splice(i,1); scene.sel=scene.blocks[Math.max(0,i-1)].id; syncControls(); render(); refreshBlockList(); }
+function moveBlock(dir){ const i=scene.blocks.findIndex(b=>b.id===scene.sel); const j=i+dir; if(j<0||j>=scene.blocks.length) return; const [x]=scene.blocks.splice(i,1); scene.blocks.splice(j,0,x); render(); refreshBlockList(); }
 
 /* ============================================================
    ACTIONS
@@ -662,66 +808,59 @@ function buildGrids(){
 function surprise(){
   const R=arr=>arr[Math.floor(Math.random()*arr.length)];
   const words=['AWESOME','RADICAL','WOW!!!','SALE','xX_pro_Xx','2 KEWL','GAMER','VIBES','SIGMA','LEGEND','OMG','BONUS','FREE!!','L33T'];
-  const gk=Object.keys(GRADIENTS);
-  state={...state,
+  const b=sel();
+  Object.assign(b,{
     text:R(words), font:R(['Impact','Arial Black','Comic Sans MS','Papyrus','Brush Script MT','Georgia','Verdana']),
-    size:120+Math.floor(Math.random()*120), warp:R(WARPS)[0], curve:Math.floor(Math.random()*400)-200,
-    rotate:Math.floor(Math.random()*30)-15, skew:Math.floor(Math.random()*30)-15,
-    fillMode:'gradient', gradient:R(gk), gangle:Math.floor(Math.random()*360),
+    size:100+Math.floor(Math.random()*120), warp:R(WARPS)[0], curve:Math.floor(Math.random()*360)-180,
+    rotate:Math.floor(Math.random()*40)-20, skew:Math.floor(Math.random()*30)-15,
+    fillMode:'gradient', gradient:R(Object.keys(GRADIENTS)), gangle:Math.floor(Math.random()*360),
     outline:Math.random()>.2, outlineColor:R(['#000000','#2a0033','#ffffff','#3a005a']), outlineWidth:3+Math.floor(Math.random()*8),
     bevel:Math.random()>.5, extrude:Math.floor(Math.random()*10),
     shadow:Math.random()>.3, shadowX:Math.floor(Math.random()*20)-6, shadowY:Math.floor(Math.random()*20)-2, shadowBlur:Math.floor(Math.random()*10),
     shadowColor:R(['#000000','#ff2fd0','#00e5ff','#7bff00']),
-    bg:R(BGS)[0], bgColor:R(['#1a0033','#000','#05010f','#3a0000','#001a33']), bgColor2:R(['#003a5c','#ff5fd6','#00e5ff','#ff8a00']),
-    sparkles:Math.random()>.25, sparkleN:Math.floor(Math.random()*60),
     rainbowAnim:Math.random()>.7, wobble:Math.random()>.85, pulse:Math.random()>.85, blink:Math.random()>.9,
-  };
-  syncControls(); render(); flash('🎲 Behold.');
+  });
+  scene.bg=R(BGS)[0]; scene.bgColor=R(['#1a0033','#000','#05010f','#3a0000','#001a33']); scene.bgColor2=R(['#003a5c','#ff5fd6','#00e5ff','#ff8a00']);
+  syncControls(); render(); refreshBlockList(); flash('🎲 Behold.');
 }
 
 function exportPNG(){
-  const scale=2;
-  const svg=buildSVG(state,true);
+  const scale=2, svg=buildSceneSVG(true);
   const img=new Image();
   const blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});
   const url=URL.createObjectURL(blob);
   img.onload=()=>{
-    const cv=document.createElement('canvas'); cv.width=W*scale; cv.height=H*scale;
+    const cv=document.createElement('canvas'); cv.width=SW*scale; cv.height=SH*scale;
     const ctx=cv.getContext('2d');
     paintBg(ctx,cv.width,cv.height);
     ctx.drawImage(img,0,0,cv.width,cv.height);
     URL.revokeObjectURL(url);
-    cv.toBlob(b=>{
+    cv.toBlob(bb=>{
       const a=document.createElement('a');
-      a.href=URL.createObjectURL(b);
-      a.download=(state.text||'wordart').replace(/[^\w]+/g,'_').slice(0,24)+'_wordart.png';
-      a.click();
-      setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      a.href=URL.createObjectURL(bb);
+      a.download=((sel()&&sel().text)||'wordart').replace(/[^\w]+/g,'_').slice(0,24)+'_scene.png';
+      a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
     },'image/png');
   };
   img.onerror=()=>{ URL.revokeObjectURL(url); flash('⚠️ Export failed — try Copy SVG.'); };
   img.src=url;
 }
-
 function paintBg(ctx,w,h){
-  const s=state, a=s.bgColor, b=s.bgColor2;
-  if(s.bg==='checker' || s.bg==='stars'){ /* leave transparent-ish; stars just fill dark */
-    if(s.bg==='stars'){ ctx.fillStyle='#05010f'; ctx.fillRect(0,0,w,h); }
-    return;
-  }
+  const s=scene, a=s.bgColor, b=s.bgColor2;
+  if(s.bg==='checker'){ return; }
+  if(s.bg==='stars'){ ctx.fillStyle='#05010f'; ctx.fillRect(0,0,w,h); return; }
   if(s.bg==='gradient'||s.bg==='grid'||s.bg==='plasma'){
-    const g=ctx.createLinearGradient(0,0,w,h); g.addColorStop(0,a); g.addColorStop(1,b);
-    ctx.fillStyle=g; ctx.fillRect(0,0,w,h); return;
+    const g=ctx.createLinearGradient(0,0,w,h); g.addColorStop(0,a); g.addColorStop(1,b); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); return;
   }
   ctx.fillStyle=a||'#111'; ctx.fillRect(0,0,w,h);
 }
 
 async function copySVG(){
-  const svg=buildSVG(state,true);
-  try{ await navigator.clipboard.writeText(svg); flash('📋 SVG copied!'); }
+  const svg=buildSceneSVG(true);
+  try{ await navigator.clipboard.writeText(svg); flash('📋 Scene SVG copied!'); }
   catch(e){
     const ta=document.createElement('textarea'); ta.value=svg; document.body.appendChild(ta); ta.select();
-    try{document.execCommand('copy');flash('📋 SVG copied!');}catch(_){flash('⚠️ Copy blocked');}
+    try{ document.execCommand('copy'); flash('📋 Scene SVG copied!'); }catch(_){ flash('⚠️ Copy blocked'); }
     ta.remove();
   }
 }
@@ -730,12 +869,11 @@ let flashT;
 function flash(msg){
   let el=$('flash');
   if(!el){ el=document.createElement('div'); el.id='flash';
-    el.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:30px;border:2px solid var(--hot);font-weight:bold;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.5)';
+    el.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:10px 18px;border-radius:30px;border:2px solid var(--hot);font-weight:bold;z-index:99;box-shadow:0 6px 20px rgba(0,0,0,.5);transition:opacity .4s';
     document.body.appendChild(el);
   }
   el.textContent=msg; el.style.opacity='1';
   clearTimeout(flashT); flashT=setTimeout(()=>el.style.opacity='0',1400);
-  el.style.transition='opacity .4s';
 }
 
 /* ============================================================
@@ -743,7 +881,6 @@ function flash(msg){
    ============================================================ */
 function boot(){
   $('yr').textContent='2026';
-  // fake hit counter (millennial law requires one)
   let n=parseInt(localStorage.getItem('wacount')||'0',10)+Math.floor(Math.random()*7+1);
   localStorage.setItem('wacount',n);
   $('counter').textContent=String(1337+n).padStart(6,'0');
@@ -751,12 +888,13 @@ function boot(){
   initControls();
   buildGrids();
   syncControls();
+  refreshBlockList();
   render();
 
   $('surprise').onclick=surprise;
   $('btnPng').onclick=exportPNG;
   $('btnSvg').onclick=copySVG;
-  $('btnReset').onclick=()=>{ if(confirm('Reset to factory trash?')){ state={...DEFAULT}; syncControls(); render(); flash('↺ Reset'); } };
+  $('btnReset').onclick=()=>{ if(confirm('Reset the whole scene to factory trash?')){ scene=freshScene(); syncControls(); buildGrids(); refreshBlockList(); render(); flash('↺ Reset'); } };
 }
 document.addEventListener('DOMContentLoaded',boot);
 </script>
